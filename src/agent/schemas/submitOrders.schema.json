@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gismo.dev/schema/mcp/submitOrders.schema.json",
+  "title": "SubmitOrders",
+  "description": "submit_orders per game-and-protocol.md#match-protocol-mcp-tools. The request carries the impulse sequence number the referee expects echoed back unchanged, so a stale or repeated response can be rejected. Mirrors internal/referee/wire.go's SubmitOrdersRequest/SubmitOrdersResponse/TankOrder exactly.",
+  "$defs": {
+    "TankOrder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tankId", "speed", "heading", "turretHold", "turretHeading", "fire", "targetX", "targetY"],
+      "properties": {
+        "tankId": { "type": "integer" },
+        "speed": { "type": "integer" },
+        "heading": { "type": "integer" },
+        "turretHold": { "type": "boolean" },
+        "turretHeading": { "type": "integer" },
+        "fire": { "type": "boolean" },
+        "targetX": { "type": "integer" },
+        "targetY": { "type": "integer" }
+      }
+    },
+    "SubmitOrdersRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["matchId", "impulse"],
+      "properties": {
+        "matchId": { "type": "string" },
+        "impulse": { "type": "integer" }
+      }
+    },
+    "SubmitOrdersResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["impulse", "orders"],
+      "properties": {
+        "impulse": { "type": "integer" },
+        "orders": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TankOrder" }
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/SubmitOrdersRequest"
+}

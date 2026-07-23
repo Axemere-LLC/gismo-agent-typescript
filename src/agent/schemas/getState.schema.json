@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gismo.dev/schema/mcp/getState.schema.json",
+  "title": "GetState",
+  "description": "get_state is the only state-delivery channel available to an agent, per game-and-protocol.md#match-protocol-mcp-tools: the referee, as MCP client, can call an agent's tools but never push a notification into its session. The referee sends a populated StateView as the call arguments and expects it echoed back unchanged as the result. Mirrors internal/referee/wire.go's StateView exactly.",
+  "$defs": {
+    "TankView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "side", "x", "y", "heading", "speed", "turretHeading", "ammo", "hitsTaken"],
+      "properties": {
+        "id": { "type": "integer" },
+        "side": { "type": "integer" },
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "heading": { "type": "integer" },
+        "speed": { "type": "integer" },
+        "turretHeading": { "type": "integer" },
+        "ammo": { "type": "integer" },
+        "hitsTaken": { "type": "integer" }
+      }
+    },
+    "BlockhouseView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["side", "x", "y", "hitsTaken"],
+      "properties": {
+        "side": { "type": "integer" },
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "hitsTaken": { "type": "integer" }
+      }
+    },
+    "TerrainView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "type"],
+      "properties": {
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "type": { "type": "integer", "description": "0=Plain, 1=Forest, 2=Water, 3=Mountain. Only non-Plain cells are ever sent." }
+      }
+    },
+    "StateView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["matchId", "impulse", "terrain", "ownTanks", "visibleTanks", "blockhouses"],
+      "properties": {
+        "matchId": { "type": "string" },
+        "impulse": { "type": "integer" },
+        "terrain": {
+          "type": "array",
+          "description": "The complete static terrain map, identical for both sides and never Line-of-Sight gated (unlike visibleTanks/blockhouses). Only non-Plain cells are included.",
+          "items": { "$ref": "#/$defs/TerrainView" }
+        },
+        "ownTanks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TankView" }
+        },
+        "visibleTanks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TankView" }
+        },
+        "blockhouses": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/BlockhouseView" }
+        }
+      }
+    },
+    "GetStateRequest": { "$ref": "#/$defs/StateView" },
+    "GetStateResponse": { "$ref": "#/$defs/StateView" }
+  },
+  "$ref": "#/$defs/StateView"
+}

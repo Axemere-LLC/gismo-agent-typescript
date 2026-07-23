@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gismo.dev/schema/mcp/surrender.schema.json",
+  "title": "Surrender",
+  "description": "surrender is callable any time per game-and-protocol.md#match-protocol-mcp-tools, polling an agent for whether it surrenders the match now. Mirrors internal/referee/wire.go's SurrenderRequest/SurrenderResponse exactly.",
+  "$defs": {
+    "SurrenderRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["matchId"],
+      "properties": {
+        "matchId": { "type": "string" }
+      }
+    },
+    "SurrenderResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surrendered"],
+      "properties": {
+        "surrendered": { "type": "boolean" }
+      }
+    }
+  },
+  "$ref": "#/$defs/SurrenderRequest"
+}
