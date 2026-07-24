@@ -1,0 +1,24 @@
+name: Release
+
+# Inert until the reveal milestone: this repo is private and no tag has been
+# pushed. A template repo has no package to publish — a release tag just
+# marks a known-good scaffold version the scaffolder CLI can pin to. See
+# gismo-platform/docs/phase-7-supply-chain.md.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
