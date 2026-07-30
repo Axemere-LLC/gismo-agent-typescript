@@ -12,17 +12,11 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # secrets context isn't available in steps.*.if — hoist the presence
-    # check into env, which is.
-    env:
-      HAS_SIBLING_TOKEN: ${{ secrets.SIBLING_REPO_TOKEN != '' }}
     steps:
       # actions/checkout refuses any path outside $GITHUB_WORKSPACE (no
       # "../"), so the main repo and its siblings are all checked out as
       # subdirectories of the workspace instead — gismo-agent-typescript/,
-      # gismo-sdk-typescript/, gismo-contracts/ — which preserves the
-      # "file:../gismo-sdk-typescript" dependency and the README's
-      # "../gismo-contracts" conformance-test resolution.
+      # gismo-sdk-typescript/, gismo-contracts/.
       - uses: actions/checkout@v4
         with:
           path: gismo-agent-typescript
@@ -41,19 +35,12 @@ jobs:
           fi
           echo "all dependencies pinned"
 
-      # @gismo/sdk is a "file:../gismo-sdk-typescript" dependency, and its
-      # package.json main/exports point into dist/, so the sibling must be
-      # checked out AND built before this repo's `npm ci` will resolve it —
-      # not just present on disk. That requires read access to the private
-      # gismo-sdk-typescript repo, requiring SIBLING_REPO_TOKEN; see
+      # @gismo/sdk@1.0.0 is the correct, committed dependency version, but it
+      # doesn't exist on the real npm registry yet, so the sibling repo is
+      # built here and substituted in below. Requires read access to the
+      # private gismo-sdk-typescript repo via SIBLING_REPO_TOKEN; see
       # gismo-platform/docs/phase-7-supply-chain.md for provisioning it.
-      # Skips (not fails) until that secret exists, and continue-on-error
-      # covers the case where the secret exists but a sibling repo isn't in
-      # the token's read scope — the hashFiles check on the install/test step
-      # only proceeds if the checkout actually succeeded.
       - name: Checkout gismo-sdk-typescript (sibling)
-        if: ${{ env.HAS_SIBLING_TOKEN == 'true' }}
-        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: Axemere-LLC/gismo-sdk-typescript
@@ -61,7 +48,6 @@ jobs:
           path: gismo-sdk-typescript
 
       - name: Build gismo-sdk-typescript (sibling)
-        if: ${{ env.HAS_SIBLING_TOKEN == 'true' && hashFiles('gismo-sdk-typescript/package.json') != '' }}
         working-directory: gismo-sdk-typescript
         run: |
           npm ci
@@ -72,7 +58,6 @@ jobs:
       # a missing/failed checkout degrades to fewer tests run rather than a
       # failure.
       - name: Checkout gismo-contracts (sibling)
-        if: ${{ env.HAS_SIBLING_TOKEN == 'true' }}
         continue-on-error: true
         uses: actions/checkout@v4
         with:
@@ -80,11 +65,19 @@ jobs:
           token: ${{ secrets.SIBLING_REPO_TOKEN }}
           path: gismo-contracts
 
+      # Pre-publish bridge: @gismo/sdk@1.0.0 is the correct, committed
+      # dependency version, but it doesn't exist on the real npm registry
+      # yet. Point this CI install at the sibling build instead so the
+      # suite runs green until the first real publish.
+      # DELETE THIS STEP once @gismo/sdk@1.0.0 is published to npm.
+      - name: Bridge @gismo/sdk to the local sibling build (pre-publish only)
+        working-directory: gismo-agent-typescript
+        run: npm pkg set dependencies.@gismo/sdk="file:../gismo-sdk-typescript"
+
       - name: Install dependencies and run test suite
-        if: ${{ env.HAS_SIBLING_TOKEN == 'true' && hashFiles('gismo-sdk-typescript/package.json') != '' }}
         working-directory: gismo-agent-typescript
         env:
           GISMO_CONTRACTS_DIR: ${{ github.workspace }}/gismo-contracts
         run: |
-          npm ci
+          npm install
           npm test

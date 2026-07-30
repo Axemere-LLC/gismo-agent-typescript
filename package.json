@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "description": "TypeScript starter template for a Gismo competitor agent",
   "license": "Apache-2.0",
-  "private": true,
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -13,7 +12,7 @@
     "test": "npm run build && node --test dist/test/*.test.js"
   },
   "dependencies": {
-    "@gismo/sdk": "file:../gismo-sdk-typescript",
+    "@gismo/sdk": "1.0.0",
     "@modelcontextprotocol/sdk": "1.29.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
