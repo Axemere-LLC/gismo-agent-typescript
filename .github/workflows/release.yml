@@ -1,13 +1,22 @@
 name: Release
 
-# Inert until the reveal milestone: this repo is private and no tag has been
-# pushed. A template repo has no package to publish — a release tag just
-# marks a known-good scaffold version the scaffolder CLI can pin to. See
+# Gated: the "Publish GitHub Release" step only runs when the
+# RELEASE_PUBLISH_ENABLED repo variable is set to "true" AND this isn't a
+# workflow_dispatch dry run. RELEASE_PUBLISH_ENABLED is unset until the
+# reveal decision, so the gate is closed by default. A template repo has no
+# package to publish — a release tag just marks a known-good scaffold
+# version the scaffolder CLI can pin to. See
 # gismo-platform/docs/phase-7-supply-chain.md.
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: skip the publish step"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -19,6 +28,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Publish GitHub Release
+        if: vars.RELEASE_PUBLISH_ENABLED == 'true' && github.event.inputs.dry_run != 'true'
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
