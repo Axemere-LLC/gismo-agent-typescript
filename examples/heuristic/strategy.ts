@@ -1,10 +1,10 @@
-import type { mcp } from "@gismo/sdk";
+import type { mcp } from "@gismo2026/sdk";
 
 import { headingToward, stepHeadingToward, stepSpeedToward, turnAllowance, turnDistance } from "../../src/agent/legality.js";
 import { holdOrders } from "../../src/agent/strategy.js";
 import type { Strategy } from "../../src/agent/strategy.js";
 
-// @gismo/sdk's mcp/index.ts doesn't re-export TerrainView (only its own
+// @gismo2026/sdk's mcp/index.ts doesn't re-export TerrainView (only its own
 // get-state.ts module defines it) — the same gap gismo-agent-python works
 // around by importing gismo.mcp.get_state directly. The TS SDK's package.json
 // exports map only exposes the package root, so there's no subpath-import

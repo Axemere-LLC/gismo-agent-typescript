@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import type { mcp } from "@gismo/sdk";
+import type { mcp } from "@gismo2026/sdk";
 
 import { HoldStrategy, holdOrders } from "../src/agent/strategy.js";
 

@@ -1,4 +1,4 @@
-import type { mcp } from "@gismo/sdk";
+import type { mcp } from "@gismo2026/sdk";
 
 import { headingToward, stepHeadingToward, stepSpeedToward, turnAllowance } from "../../src/agent/legality.js";
 import type { Strategy } from "../../src/agent/strategy.js";

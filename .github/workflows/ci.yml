@@ -35,7 +35,7 @@ jobs:
           fi
           echo "all dependencies pinned"
 
-      # @gismo/sdk@1.0.0 is the correct, committed dependency version, but it
+      # @gismo2026/sdk@1.0.0 is the correct, committed dependency version, but it
       # doesn't exist on the real npm registry yet, so the sibling repo is
       # built here and substituted in below. Requires read access to the
       # private gismo-sdk-typescript repo via SIBLING_REPO_TOKEN; see
@@ -65,14 +65,14 @@ jobs:
           token: ${{ secrets.SIBLING_REPO_TOKEN }}
           path: gismo-contracts
 
-      # Pre-publish bridge: @gismo/sdk@1.0.0 is the correct, committed
+      # Pre-publish bridge: @gismo2026/sdk@1.0.0 is the correct, committed
       # dependency version, but it doesn't exist on the real npm registry
       # yet. Point this CI install at the sibling build instead so the
       # suite runs green until the first real publish.
-      # DELETE THIS STEP once @gismo/sdk@1.0.0 is published to npm.
-      - name: Bridge @gismo/sdk to the local sibling build (pre-publish only)
+      # DELETE THIS STEP once @gismo2026/sdk@1.0.0 is published to npm.
+      - name: Bridge @gismo2026/sdk to the local sibling build (pre-publish only)
         working-directory: gismo-agent-typescript
-        run: npm pkg set dependencies.@gismo/sdk="file:../gismo-sdk-typescript"
+        run: npm pkg set dependencies.@gismo2026/sdk="file:../gismo-sdk-typescript"
 
       - name: Install dependencies and run test suite
         working-directory: gismo-agent-typescript

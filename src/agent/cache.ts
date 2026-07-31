@@ -1,4 +1,4 @@
-import type { mcp } from "@gismo/sdk";
+import type { mcp } from "@gismo2026/sdk";
 
 /**
  * Holds the most recent get_state view per match ID.

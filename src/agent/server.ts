@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { mcp } from "@gismo/sdk";
+import type { mcp } from "@gismo2026/sdk";
 import { z } from "zod";
 
 import { StateCache } from "./cache.js";

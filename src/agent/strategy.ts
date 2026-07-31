@@ -1,4 +1,4 @@
-import type { mcp } from "@gismo/sdk";
+import type { mcp } from "@gismo2026/sdk";
 
 /**
  * The single hook a competitor implements: given the agent's current view

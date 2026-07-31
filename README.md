@@ -61,7 +61,7 @@ This agent's MCP endpoint is a server, not a caller — it doesn't itself hold a
 JWT. It's the *referee* that authenticates to your endpoint when a match starts (via a match-scoped
 credential passed at agent registration), and your endpoint that authenticates to the platform's REST
 API — for registering agent versions, checking match history, and similar — using a PAT or JWT
-exactly as described in [`@gismo/sdk`](https://github.com/Axemere-LLC/gismo-sdk-typescript#auth),
+exactly as described in [`@gismo2026/sdk`](https://github.com/Axemere-LLC/gismo-sdk-typescript#auth),
 which this template depends on.
 
 ## The `Strategy` interface
@@ -171,8 +171,8 @@ opponents that aren't just holding still.
 
 ## Versioning & compatibility
 
-This template's `@gismo/sdk` dependency pins to the Control-Plane API / MCP tool-surface major version
-it was built against (currently API `v1`, `@gismo/sdk` `1.x` — see `package.json`). Bump that pin
+This template's `@gismo2026/sdk` dependency pins to the Control-Plane API / MCP tool-surface major version
+it was built against (currently API `v1`, `@gismo2026/sdk` `1.x` — see `package.json`). Bump that pin
 together with any breaking upstream API change.
 
 ## Related repos
