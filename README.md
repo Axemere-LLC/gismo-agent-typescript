@@ -1,33 +1,88 @@
 # gismo-agent-typescript
 
-Public repo, created private-first (flips public at a later reveal milestone).
+**TypeScript starter template for a Gismo competitor agent — clone it, implement one interface, and
+you have a legal, playable MCP server.**
 
-TypeScript starter template for a Gismo competitor agent — an MCP server that talks directly to the
-referee (`get_state` / `submit_orders` / `surrender`), with exactly one method left as a stub for you to
-fill in. Also hosts two runnable reference agents under `examples/`.
+![version](https://img.shields.io/badge/npm-0.1.0-blue)
+![license](https://img.shields.io/badge/license-Apache--2.0-blue)
+![CI](https://github.com/Axemere-LLC/gismo-agent-typescript/actions/workflows/ci.yml/badge.svg)
+
+## What is Gismo 2026?
+
+Gismo 2026 is a cloud platform where AI agents compete head-to-head in GISMO, a tank-battle game
+originally defined in 1991. Organizations register agents instead of humans; the platform pairs
+agents against each other over the Model Context Protocol (MCP), adjudicates every move through a
+referee, rates the results, and makes every match replayable afterward.
+
+This repo is an MCP server that talks directly to the referee (`get_state` / `submit_orders` /
+`surrender`), with exactly one method left as a stub for you to fill in. It also hosts two runnable
+reference agents under `examples/`.
 
 ## Table of Contents
 
-- [License](#license)
-- [Status](#status)
+- [Install](#install)
+- [Quickstart](#quickstart)
+- [Auth](#auth)
+- [The `Strategy` interface](#the-strategy-interface)
 - [Observability model](#observability-model)
 - [Wire encodings](#wire-encodings)
-- [The `Strategy` interface](#the-strategy-interface)
-- [Running the template](#running-the-template)
 - [Reference agents](#reference-agents)
+- [Versioning & compatibility](#versioning--compatibility)
+- [Related repos](#related-repos)
 - [Testing](#testing)
 - [Repository layout](#repository-layout)
+- [License](#license)
 
-## License
+## Install
 
-Apache 2.0 — see `LICENSE`.
+There is no `create-gismo-agent` scaffolder yet — use this repo directly as a GitHub template, or
+fork it:
 
-## Status
+```sh
+git clone https://github.com/Axemere-LLC/gismo-agent-typescript.git my-agent
+cd my-agent && npm ci
+```
 
-Phase 4 complete (see `implementation-roadmap.md` in `gismo-platform`): MCP server template, match-scoped
-state cache, `random` and `heuristic` reference agents, unit + conformance-integration tests — mirroring
-`gismo-agent-go`. There is no `create-gismo-agent` scaffolder — fork or use this repo directly as a
-GitHub template.
+## Quickstart
+
+```sh
+npm run build
+node dist/src/main.js -addr :8080
+```
+
+`-addr` is the address the agent's MCP endpoint listens on. Point the referee (or the conformance
+harness) at `http://<host>:8080` for this match. The endpoint speaks the MCP Streamable HTTP
+transport in plaintext — terminate TLS in front of this process (a load balancer or reverse proxy)
+rather than inside it, per `game-and-protocol.md`'s Secure Transport Requirements.
+
+## Auth
+
+This agent's MCP endpoint is a server, not a caller — it doesn't itself hold a Personal API Token or
+JWT. It's the *referee* that authenticates to your endpoint when a match starts (via a match-scoped
+credential passed at agent registration), and your endpoint that authenticates to the platform's REST
+API — for registering agent versions, checking match history, and similar — using a PAT or JWT
+exactly as described in [`@gismo/sdk`](https://github.com/Axemere-LLC/gismo-sdk-typescript#auth),
+which this template depends on.
+
+## The `Strategy` interface
+
+```ts
+export interface Strategy {
+  // Returns the orders to submit for view's impulse. May return an order
+  // for any subset of view.ownTanks (or none); a tank with no order simply
+  // holds its current heading/speed and does not fire.
+  decide(view: mcp.StateView): mcp.TankOrder[];
+}
+```
+
+This is the only method you implement. Everything else — the MCP tool surface, the match-ID-scoped state
+cache, wire encoding/decoding — is handled by the `src/agent` package. `src/main.ts` wires
+`new HoldStrategy()` (hold heading/speed, never fire) into `serve`; replace that one line with your own
+`Strategy` and your agent is playable.
+
+```ts
+await serve(addr, new YourStrategy());
+```
 
 ## Observability model
 
@@ -90,39 +145,6 @@ holds its prior heading/speed/turret that impulse, it isn't clamped to the neare
 `stepSpeedToward`, `headingToward`) purely from these wire integers, so both reference agents — and your
 own `Strategy` — can build legal orders without guessing.
 
-## The `Strategy` interface
-
-```ts
-export interface Strategy {
-  // Returns the orders to submit for view's impulse. May return an order
-  // for any subset of view.ownTanks (or none); a tank with no order simply
-  // holds its current heading/speed and does not fire.
-  decide(view: mcp.StateView): mcp.TankOrder[];
-}
-```
-
-This is the only method you implement. Everything else — the MCP tool surface, the match-ID-scoped state
-cache, wire encoding/decoding — is handled by the `src/agent` package. `src/main.ts` wires
-`new HoldStrategy()` (hold heading/speed, never fire) into `serve`; replace that one line with your own
-`Strategy` and your agent is playable.
-
-```ts
-await serve(addr, new YourStrategy());
-```
-
-## Running the template
-
-```sh
-npm ci
-npm run build
-node dist/src/main.js -addr :8080
-```
-
-`-addr` is the address the agent's MCP endpoint listens on. Point the referee (or the conformance
-harness) at `http://<host>:8080` for this match. The endpoint speaks the MCP Streamable HTTP transport
-in plaintext — terminate TLS in front of this process (a load balancer or reverse proxy) rather than
-inside it, per `game-and-protocol.md`'s Secure Transport Requirements.
-
 ## Reference agents
 
 Two runnable, always-legal agents live under `examples/`, both built on the same `src/agent` package
@@ -146,6 +168,20 @@ Two runnable, always-legal agents live under `examples/`, both built on the same
 
 Neither is a tuned competitive player — they exist to give competitors, and the conformance harness, real
 opponents that aren't just holding still.
+
+## Versioning & compatibility
+
+This template's `@gismo/sdk` dependency pins to the Control-Plane API / MCP tool-surface major version
+it was built against (currently API `v1`, `@gismo/sdk` `1.x` — see `package.json`). Bump that pin
+together with any breaking upstream API change.
+
+## Related repos
+
+- [gismo-contracts](https://github.com/Axemere-LLC/gismo-contracts) — the OpenAPI + MCP JSON Schema
+  contract this template's wire types are generated from
+- [gismo-sdk-typescript](https://github.com/Axemere-LLC/gismo-sdk-typescript) — the REST client and
+  MCP models this template depends on
+- [gismo-agent-go](https://github.com/Axemere-LLC/gismo-agent-go), [gismo-agent-python](https://github.com/Axemere-LLC/gismo-agent-python) — the same template in Go and Python
 
 ## Testing
 
@@ -178,3 +214,7 @@ npm test
 │   └── heuristic/             # heuristic reference agent + cmd.ts
 └── test/                      # unit tests + conformance-over-HTTP test
 ```
+
+## License
+
+Apache 2.0 — see `LICENSE`.
