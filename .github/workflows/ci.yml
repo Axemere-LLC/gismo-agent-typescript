@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # actions/checkout refuses any path outside $GITHUB_WORKSPACE (no
-      # "../"), so the main repo and its siblings are all checked out as
+      # "../"), so the main repo and its sibling are both checked out as
       # subdirectories of the workspace instead — gismo-agent-typescript/,
-      # gismo-sdk-typescript/, gismo-contracts/.
+      # gismo-contracts/.
       - uses: actions/checkout@v4
         with:
           path: gismo-agent-typescript
@@ -35,49 +35,23 @@ jobs:
           fi
           echo "all dependencies pinned"
 
-      # @gismo2026/sdk@1.0.0 is the correct, committed dependency version, but it
-      # doesn't exist on the real npm registry yet, so the sibling repo is
-      # built here and substituted in below. Requires read access to the
-      # private gismo-sdk-typescript repo via SIBLING_REPO_TOKEN; see
-      # gismo-platform/docs/phase-7-supply-chain.md for provisioning it.
-      - name: Checkout gismo-sdk-typescript (sibling)
-        uses: actions/checkout@v4
-        with:
-          repository: Axemere-LLC/gismo-sdk-typescript
-          token: ${{ secrets.SIBLING_REPO_TOKEN }}
-          path: gismo-sdk-typescript
-
-      - name: Build gismo-sdk-typescript (sibling)
-        working-directory: gismo-sdk-typescript
-        run: |
-          npm ci
-          npm run build
-
       # gismo-contracts is optional at test time: the conformance test
       # resolves GISMO_CONTRACTS_DIR and skips if that checkout is absent, so
       # a missing/failed checkout degrades to fewer tests run rather than a
-      # failure.
+      # failure. Public repo now, no token needed.
       - name: Checkout gismo-contracts (sibling)
         continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: Axemere-LLC/gismo-contracts
-          token: ${{ secrets.SIBLING_REPO_TOKEN }}
           path: gismo-contracts
 
-      # Pre-publish bridge: @gismo2026/sdk@1.0.0 is the correct, committed
-      # dependency version, but it doesn't exist on the real npm registry
-      # yet. Point this CI install at the sibling build instead so the
-      # suite runs green until the first real publish.
-      # DELETE THIS STEP once @gismo2026/sdk@1.0.0 is published to npm.
-      - name: Bridge @gismo2026/sdk to the local sibling build (pre-publish only)
-        working-directory: gismo-agent-typescript
-        run: npm pkg set dependencies.@gismo2026/sdk="file:../gismo-sdk-typescript"
-
+      # @gismo2026/sdk@1.0.0+ is published to npm — resolved straight from
+      # the registry per the committed exact pin, no sibling build needed.
       - name: Install dependencies and run test suite
         working-directory: gismo-agent-typescript
         env:
           GISMO_CONTRACTS_DIR: ${{ github.workspace }}/gismo-contracts
         run: |
-          npm install
+          npm ci
           npm test
