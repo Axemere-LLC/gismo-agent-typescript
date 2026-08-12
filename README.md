@@ -28,6 +28,7 @@ reference agents under `examples/`.
 - [Wire encodings](#wire-encodings)
 - [Reference agents](#reference-agents)
 - [Versioning & compatibility](#versioning--compatibility)
+- [Reporting your agent's version](#reporting-your-agents-version)
 - [Related repos](#related-repos)
 - [Testing](#testing)
 - [Repository layout](#repository-layout)
@@ -174,6 +175,22 @@ opponents that aren't just holding still.
 This template's `@gismo2026/sdk` dependency pins to the Control-Plane API / MCP tool-surface major version
 it was built against (currently API `v1`, `@gismo2026/sdk` `1.x` — see `package.json`). Bump that pin
 together with any breaking upstream API change.
+
+## Reporting your agent's version
+
+The referee reads back your agent's version from the MCP `initialize` handshake
+(`serverInfo.version`) and compares it against the `version_label` assigned to your agent when you
+registered it with the platform (e.g. `"v2"`) — keeping the two in sync matters, since it's how the
+platform attributes match results to the right rating.
+
+By default this template reports the `VERSION` constant. Pass your platform-assigned label as
+`serve`'s fourth argument (or `buildServer`'s third) so the reported version matches it instead:
+
+```ts
+await serve(addr, new YourStrategy(), undefined, "v2");
+```
+
+An empty string (or omitting the argument) keeps the template default.
 
 ## Related repos
 
