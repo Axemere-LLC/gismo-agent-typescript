@@ -21,12 +21,18 @@ function parseAddr(addr: string): { host: string; port: number } {
  * triggers immediately via its mandatory post-initialize
  * notifications/initialized call. cache is shared across requests (and thus
  * across the McpServer instances built per request) so get_state and the
- * later submit_orders for the same matchId still see the same view.
+ * later submit_orders for the same matchId still see the same view. version
+ * overrides the serverInfo version each of those servers reports — see
+ * buildServer.
  */
-export function requestListener(strategy: Strategy | undefined, cache: StateCache): (req: IncomingMessage, res: ServerResponse) => void {
+export function requestListener(
+  strategy: Strategy | undefined,
+  cache: StateCache,
+  version?: string,
+): (req: IncomingMessage, res: ServerResponse) => void {
   return (req, res) => {
     void (async () => {
-      const mcpServer = buildServer(strategy, cache);
+      const mcpServer = buildServer(strategy, cache, version);
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
       await mcpServer.connect(transport);
       res.on("close", () => {
@@ -45,11 +51,12 @@ export function requestListener(strategy: Strategy | undefined, cache: StateCach
 
 /**
  * Serves strategy over Streamable HTTP on addr until SIGINT/SIGTERM (or, for
- * tests, until signal aborts).
+ * tests, until signal aborts). version overrides the reported serverInfo
+ * version — see buildServer.
  */
-export async function serve(addr: string, strategy?: Strategy, signal?: AbortSignal): Promise<void> {
+export async function serve(addr: string, strategy?: Strategy, signal?: AbortSignal, version?: string): Promise<void> {
   const cache = new StateCache();
-  const httpServer = createServer(requestListener(strategy, cache));
+  const httpServer = createServer(requestListener(strategy, cache, version));
 
   const { host, port } = parseAddr(addr);
   await new Promise<void>((resolve, reject) => {

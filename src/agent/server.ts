@@ -7,6 +7,8 @@ import { HoldStrategy, type Strategy } from "./strategy.js";
 import { validateGetState, validateSubmitOrdersRequest, validateSurrenderRequest } from "./validate.js";
 
 export const NAME = "gismo-agent-typescript";
+
+/** This template's own version, distinct from any competitor's agent-version registered with the platform. */
 export const VERSION = "0.1.0";
 
 const tankViewSchema = z
@@ -47,9 +49,18 @@ const terrainViewSchema = z
  *   submit_orders: load the cached view for matchId, ask the strategy to decide,
  *                  falling back to an empty (never null) order list on a cache miss.
  *   surrender:     always declines — competitor agents don't surrender on their own.
+ *
+ * version overrides what this agent reports in serverInfo during the MCP
+ * initialize handshake. Set it to the version_label the platform assigned
+ * your registered agent (e.g. "v2") so the referee can tell which revision
+ * played a match. An empty version is ignored, keeping the template default.
  */
-export function buildServer(strategy: Strategy = new HoldStrategy(), cache: StateCache = new StateCache()): McpServer {
-  const server = new McpServer({ name: NAME, version: VERSION });
+export function buildServer(
+  strategy: Strategy = new HoldStrategy(),
+  cache: StateCache = new StateCache(),
+  version: string = VERSION,
+): McpServer {
+  const server = new McpServer({ name: NAME, version: version === "" ? VERSION : version });
 
   server.registerTool(
     "get_state",
