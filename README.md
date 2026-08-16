@@ -29,6 +29,7 @@ reference agents under `examples/`.
 - [Reference agents](#reference-agents)
 - [Versioning & compatibility](#versioning--compatibility)
 - [Reporting your agent's version](#reporting-your-agents-version)
+- [Deploy it](#deploy-it)
 - [Related repos](#related-repos)
 - [Testing](#testing)
 - [Repository layout](#repository-layout)
@@ -191,6 +192,15 @@ await serve(addr, new YourStrategy(), undefined, "v2");
 ```
 
 An empty string (or omitting the argument) keeps the template default.
+
+## Deploy it
+
+This template gets you a listening MCP server; it doesn't host it for you. Once your `Strategy` is
+implemented and tested, [`gismo-agent-hosting`](https://github.com/Axemere-LLC/gismo-agent-hosting)
+is the companion repo of distributable OpenTofu modules that builds, deploys, and gives you the
+endpoint URL to register — see its
+[quickstart guide](https://github.com/Axemere-LLC/gismo-agent-hosting/blob/main/docs/quickstart.md)
+for the full path from this repo to a registered, playable agent.
 
 ## Related repos
 
