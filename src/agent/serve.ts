@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
+import { bearerAuth } from "./auth.js";
 import { StateCache } from "./cache.js";
 import { buildServer } from "./server.js";
 import type { Strategy } from "./strategy.js";
@@ -11,6 +12,16 @@ function parseAddr(addr: string): { host: string; port: number } {
   const host = idx > 0 ? addr.slice(0, idx) : "0.0.0.0";
   const port = Number(addr.slice(idx + 1));
   return { host: host === "" ? "0.0.0.0" : host, port };
+}
+
+/**
+ * Returns ":" + $PORT when PORT is set (Cloud Run/Lambda-style platforms
+ * inject it), otherwise fallback — so -addr can still override when PORT is
+ * unset.
+ */
+export function defaultAddr(fallback: string): string {
+  const port = process.env.PORT;
+  return port ? `:${port}` : fallback;
 }
 
 /**
@@ -52,11 +63,22 @@ export function requestListener(
 /**
  * Serves strategy over Streamable HTTP on addr until SIGINT/SIGTERM (or, for
  * tests, until signal aborts). version overrides the reported serverInfo
- * version — see buildServer.
+ * version — see buildServer. When authKey is given, requests must carry a
+ * matching `Authorization: Bearer <authKey>` header — see bearerAuth.
  */
-export async function serve(addr: string, strategy?: Strategy, signal?: AbortSignal, version?: string): Promise<void> {
+export async function serve(
+  addr: string,
+  strategy?: Strategy,
+  signal?: AbortSignal,
+  version?: string,
+  authKey?: string,
+): Promise<void> {
   const cache = new StateCache();
-  const httpServer = createServer(requestListener(strategy, cache, version));
+  let listener = requestListener(strategy, cache, version);
+  if (authKey !== undefined) {
+    listener = bearerAuth(authKey, listener);
+  }
+  const httpServer = createServer(listener);
 
   const { host, port } = parseAddr(addr);
   await new Promise<void>((resolve, reject) => {
