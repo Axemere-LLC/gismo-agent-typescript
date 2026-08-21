@@ -55,3 +55,7 @@ jobs:
         run: |
           npm ci
           npm test
+
+      - name: bump-version.sh arithmetic self-test
+        working-directory: gismo-agent-typescript
+        run: bash scripts/bump-version.test.sh
