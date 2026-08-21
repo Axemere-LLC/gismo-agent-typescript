@@ -27,7 +27,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { HeuristicStrategy } from "../examples/heuristic/strategy.js";
 import { RandomStrategy } from "../examples/random/strategy.js";
 import { StateCache } from "../src/agent/cache.js";
-import { requestListener } from "../src/agent/serve.js";
+import { requestListener, versionedRequestListener } from "../src/agent/serve.js";
 import { HoldStrategy, type Strategy } from "../src/agent/strategy.js";
 
 // Same createRequire workaround as src/agent/validate.ts and
@@ -105,6 +105,24 @@ async function startAgent(strategy: Strategy): Promise<{ url: string; close: () 
   };
 }
 
+/** Boots strategy behind a /v1 mount via versionedRequestListener — the shape a fork actually deploys. */
+async function startVersionedAgent(strategy: Strategy): Promise<{ url: string; close: () => Promise<void> }> {
+  const httpServer = createServer(versionedRequestListener([{ path: "/v1", strategy }]));
+
+  await new Promise<void>((resolve, reject) => {
+    httpServer.once("error", reject);
+    httpServer.listen(0, "127.0.0.1", () => resolve());
+  });
+
+  const { port } = httpServer.address() as AddressInfo;
+  return {
+    url: `http://127.0.0.1:${port}/v1`,
+    close: async () => {
+      await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+    },
+  };
+}
+
 async function runScenario(url: string): Promise<void> {
   const client = new Client({ name: "gismo-agent-typescript-conformance-test", version: "test" });
   await client.connect(new StreamableHTTPClientTransport(new URL(url)));
@@ -147,3 +165,12 @@ for (const [name, strategy] of STRATEGIES) {
     }
   });
 }
+
+test("conformance: versioned mount (/v1) passes the 3-step scenario over real HTTP", { skip }, async () => {
+  const agent = await startVersionedAgent(new HoldStrategy());
+  try {
+    await runScenario(agent.url);
+  } finally {
+    await agent.close();
+  }
+});

@@ -1,0 +1,76 @@
+[
+  {
+    "name": "empty-field",
+    "orders": []
+  },
+  {
+    "name": "single-tank-no-enemies",
+    "orders": [
+      {
+        "tankId": 1,
+        "speed": 1,
+        "heading": 0,
+        "turretHold": true,
+        "turretHeading": 0,
+        "fire": false,
+        "targetX": 0,
+        "targetY": 0
+      }
+    ]
+  },
+  {
+    "name": "single-tank-enemy-in-range",
+    "orders": [
+      {
+        "tankId": 1,
+        "speed": 1,
+        "heading": 2,
+        "turretHold": true,
+        "turretHeading": 0,
+        "fire": false,
+        "targetX": 0,
+        "targetY": 0
+      }
+    ]
+  },
+  {
+    "name": "single-tank-near-forest",
+    "orders": [
+      {
+        "tankId": 1,
+        "speed": 1,
+        "heading": 0,
+        "turretHold": true,
+        "turretHeading": 0,
+        "fire": false,
+        "targetX": 0,
+        "targetY": 0
+      }
+    ]
+  },
+  {
+    "name": "multiple-own-tanks",
+    "orders": [
+      {
+        "tankId": 1,
+        "speed": 0,
+        "heading": 0,
+        "turretHold": true,
+        "turretHeading": 0,
+        "fire": false,
+        "targetX": 0,
+        "targetY": 0
+      },
+      {
+        "tankId": 2,
+        "speed": 3,
+        "heading": 5,
+        "turretHold": true,
+        "turretHeading": 0,
+        "fire": false,
+        "targetX": 0,
+        "targetY": 0
+      }
+    ]
+  }
+]

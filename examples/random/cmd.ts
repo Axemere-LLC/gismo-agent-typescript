@@ -4,7 +4,7 @@
 import { parseArgs } from "node:util";
 
 import { NAME, VERSION } from "../../src/agent/server.js";
-import { serve } from "../../src/agent/serve.js";
+import { serveListener, versionedRequestListener, type Mount } from "../../src/agent/serve.js";
 import { RandomStrategy } from "./strategy.js";
 
 async function main(): Promise<void> {
@@ -19,7 +19,8 @@ async function main(): Promise<void> {
 
   const seedNum = Number(seed);
   console.log(`${NAME} ${VERSION} random example (seed ${seedNum}) listening on ${addr}`);
-  await serve(addr as string, new RandomStrategy(seedNum));
+  const mounts: Mount[] = [{ path: "/v1", strategy: new RandomStrategy(seedNum) }];
+  await serveListener(addr as string, versionedRequestListener(mounts));
 }
 
 main().catch((err: unknown) => {

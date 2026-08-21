@@ -2,8 +2,9 @@
 // Stub entrypoint — fork this repo and replace HoldStrategy() below with your own Strategy.
 import { parseArgs } from "node:util";
 
+import { bearerAuth } from "./agent/auth.js";
 import { NAME, VERSION } from "./agent/server.js";
-import { defaultAddr, serve } from "./agent/serve.js";
+import { defaultAddr, serveListener, versionedRequestListener, type Mount } from "./agent/serve.js";
 import { HoldStrategy } from "./agent/strategy.js";
 
 async function main(): Promise<void> {
@@ -19,7 +20,12 @@ async function main(): Promise<void> {
   }
 
   console.log(`${NAME} ${VERSION} listening on ${addr}`);
-  await serve(addr as string, new HoldStrategy(), undefined, undefined, authKey || undefined);
+  const mounts: Mount[] = [{ path: "/v1", strategy: new HoldStrategy() }];
+  let listener = versionedRequestListener(mounts);
+  if (authKey) {
+    listener = bearerAuth(authKey, listener);
+  }
+  await serveListener(addr as string, listener);
 }
 
 main().catch((err: unknown) => {

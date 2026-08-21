@@ -1,0 +1,77 @@
+[
+  {
+    "name": "empty-field",
+    "view": {
+      "matchId": "fixture-empty-field",
+      "impulse": 1,
+      "ownTanks": [],
+      "visibleTanks": [],
+      "blockhouses": [],
+      "terrain": []
+    }
+  },
+  {
+    "name": "single-tank-no-enemies",
+    "view": {
+      "matchId": "fixture-single-tank-no-enemies",
+      "impulse": 1,
+      "ownTanks": [
+        { "id": 1, "side": 0, "x": 10, "y": 10, "heading": 0, "speed": 1, "turretHeading": 0, "ammo": 5, "hitsTaken": 0 }
+      ],
+      "visibleTanks": [],
+      "blockhouses": [],
+      "terrain": []
+    }
+  },
+  {
+    "name": "single-tank-enemy-in-range",
+    "view": {
+      "matchId": "fixture-single-tank-enemy-in-range",
+      "impulse": 3,
+      "ownTanks": [
+        { "id": 1, "side": 0, "x": 0, "y": 0, "heading": 2, "speed": 1, "turretHeading": 2, "ammo": 5, "hitsTaken": 0 }
+      ],
+      "visibleTanks": [
+        { "id": 50, "side": 1, "x": 5, "y": 0, "heading": 4, "speed": 1, "turretHeading": 4, "ammo": 5, "hitsTaken": 0 }
+      ],
+      "blockhouses": [],
+      "terrain": []
+    }
+  },
+  {
+    "name": "single-tank-near-forest",
+    "view": {
+      "matchId": "fixture-single-tank-near-forest",
+      "impulse": 1,
+      "ownTanks": [
+        { "id": 1, "side": 0, "x": 0, "y": 0, "heading": 0, "speed": 1, "turretHeading": 0, "ammo": 5, "hitsTaken": 0 }
+      ],
+      "visibleTanks": [],
+      "blockhouses": [],
+      "terrain": [
+        { "x": 3, "y": 0, "type": 1 },
+        { "x": 8, "y": 8, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "multiple-own-tanks",
+    "view": {
+      "matchId": "fixture-multiple-own-tanks",
+      "impulse": 5,
+      "ownTanks": [
+        { "id": 1, "side": 0, "x": 0, "y": 0, "heading": 0, "speed": 0, "turretHeading": 0, "ammo": 3, "hitsTaken": 0 },
+        { "id": 2, "side": 0, "x": 10, "y": 10, "heading": 5, "speed": 3, "turretHeading": 5, "ammo": 3, "hitsTaken": 1 }
+      ],
+      "visibleTanks": [
+        { "id": 100, "side": 1, "x": 7, "y": 3, "heading": 6, "speed": 2, "turretHeading": 6, "ammo": 4, "hitsTaken": 0 }
+      ],
+      "blockhouses": [
+        { "side": 1, "x": 15, "y": 15, "hitsTaken": 2 }
+      ],
+      "terrain": [
+        { "x": 2, "y": 2, "type": 1 }
+      ]
+    }
+  }
+]

@@ -24,6 +24,7 @@ reference agents under `examples/`.
 - [Quickstart](#quickstart)
 - [Auth](#auth)
 - [The `Strategy` interface](#the-strategy-interface)
+- [Serving multiple versions](#serving-multiple-versions)
 - [Observability model](#observability-model)
 - [Wire encodings](#wire-encodings)
 - [Reference agents](#reference-agents)
@@ -52,10 +53,11 @@ npm run build
 node dist/src/main.js -addr :8080
 ```
 
-`-addr` is the address the agent's MCP endpoint listens on. Point the referee (or the conformance
-harness) at `http://<host>:8080` for this match. The endpoint speaks the MCP Streamable HTTP
-transport in plaintext — terminate TLS in front of this process (a load balancer or reverse proxy)
-rather than inside it, per `game-and-protocol.md`'s Secure Transport Requirements.
+`-addr` is the address the agent's MCP endpoint listens on. The template mounts its `Strategy` at
+`/v1` (see [Serving multiple versions](#serving-multiple-versions)) — point the referee (or the
+conformance harness) at `http://<host>:8080/v1` for this match. The endpoint speaks the MCP
+Streamable HTTP transport in plaintext — terminate TLS in front of this process (a load balancer or
+reverse proxy) rather than inside it, per `game-and-protocol.md`'s Secure Transport Requirements.
 
 ## Auth
 
@@ -78,13 +80,46 @@ export interface Strategy {
 ```
 
 This is the only method you implement. Everything else — the MCP tool surface, the match-ID-scoped state
-cache, wire encoding/decoding — is handled by the `src/agent` package. `src/main.ts` wires
-`new HoldStrategy()` (hold heading/speed, never fire) into `serve`; replace that one line with your own
+cache, wire encoding/decoding — is handled by the `src/agent` package. `src/main.ts` mounts
+`new HoldStrategy()` (hold heading/speed, never fire) at `/v1`; replace that one line with your own
 `Strategy` and your agent is playable.
 
 ```ts
-await serve(addr, new YourStrategy());
+const mounts: Mount[] = [{ path: "/v1", strategy: new YourStrategy() }];
+await serveListener(addr, versionedRequestListener(mounts));
 ```
+
+## Serving multiple versions
+
+Gismo has two independent versioning axes: this repo's **code version** (`package.json`, git tags)
+and your agent's **generation** (a flat integer, one immutable URL path `/vN`, rated independently by
+the platform from the moment it's registered). A code release doesn't create a new generation — only
+adding another `Mount` does.
+
+`src/agent/serve.ts`'s `versionedRequestListener` dispatches to one or more immutable generations,
+each with its own `Strategy` and its own isolated match-state cache, in a single process:
+
+```ts
+import { serveListener, versionedRequestListener, type Mount } from "./agent/serve.js";
+
+const mounts: Mount[] = [
+  { path: "/v1", strategy: new V1Strategy() }, // frozen: never change what /v1 serves
+  { path: "/v2", strategy: new V2Strategy() }, // your current, still-evolving generation
+];
+await serveListener(addr, versionedRequestListener(mounts));
+```
+
+Register `/v1` and `/v2` as separate agent versions with the platform, each with its own
+`version_label` (`"v1"`, `"v2"`); the referee compares that label against `serverInfo.version` from
+each mount's MCP `initialize` handshake, which `versionedRequestListener` derives automatically from
+the mount's path — there's no separate version string to keep in sync by hand. Once a generation is
+rated, treat its `Strategy` as frozen: fix a bug or improve behavior by adding a new `Mount` at a new
+path, not by editing the old one in place — see [Fixture drift lock](#testing) for a test that catches
+an accidental edit to a shared helper (like `src/agent/legality.ts`) silently changing an
+already-shipped generation's behavior.
+
+`versionedRequestListener` returns a bare `RequestListener` with no auth applied — wrap it yourself,
+as `src/main.ts` does with `src/agent/auth.ts`'s `bearerAuth`, before passing it to `serveListener`.
 
 ## Observability model
 
@@ -184,8 +219,13 @@ The referee reads back your agent's version from the MCP `initialize` handshake
 registered it with the platform (e.g. `"v2"`) — keeping the two in sync matters, since it's how the
 platform attributes match results to the right rating.
 
-By default this template reports the `VERSION` constant. Pass your platform-assigned label as
-`serve`'s fourth argument (or `buildServer`'s third) so the reported version matches it instead:
+Each `Mount`'s reported version is derived from its `path` (`/v2` reports `"v2"`) — register that
+same string as the `version_label` when you register the generation with the platform, and the two
+stay in sync automatically. See [Serving multiple versions](#serving-multiple-versions).
+
+`serve`, the single-strategy entrypoint kept for code not using `versionedRequestListener`, reports
+the `VERSION` constant by default. Pass your platform-assigned label as `serve`'s fourth argument (or
+`buildServer`'s third) so the reported version matches it instead:
 
 ```ts
 await serve(addr, new YourStrategy(), undefined, "v2");
@@ -222,23 +262,44 @@ npm test
   the shared legality helpers, the schema-backed request validators, and the MCP tool surface.
 - `test/examples-{random,heuristic}.test.ts` — assert every emitted order is legal, plus each agent's own
   decision logic (nearest-enemy targeting, cover-seeking, determinism).
+- `test/versions.test.ts` — `versionedRequestListener`'s routing/isolation behavior: invalid mount
+  lists are rejected, an unknown path 404s, the exact and trailing-slash forms of a mount both serve
+  without a redirect, each mount's reported version label matches its path, and two mounts never share
+  match state.
 - `test/conformance.test.ts` — boots real, listening `gismo-agent-typescript` MCP servers over HTTP,
-  drives each (the unmodified template and both reference agents) through the fixed
-  `get_state → submit_orders → surrender` scenario with a real MCP client, and schema-validates every
-  live response against the shared `gismo-contracts/mcp-schema/*.schema.json` files — the same contract
-  `gismo-agent-go`'s integration test checks. It resolves `gismo-contracts` via `GISMO_CONTRACTS_DIR`
-  (default: the sibling `../gismo-contracts` checkout) and skips if that checkout is absent.
+  drives each (the unmodified template, both reference agents, and a `/v1` versioned mount) through the
+  fixed `get_state → submit_orders → surrender` scenario with a real MCP client, and schema-validates
+  every live response against the shared `gismo-contracts/mcp-schema/*.schema.json` files — the same
+  contract `gismo-agent-go`'s integration test checks. It resolves `gismo-contracts` via
+  `GISMO_CONTRACTS_DIR` (default: the sibling `../gismo-contracts` checkout) and skips if that checkout
+  is absent.
+- `test/fixtures.test.ts` — the **fixture drift lock**: replays the scenario corpus in
+  `fixtures/scenarios.json` against each mounted generation's `Strategy` and compares the resulting
+  orders byte-for-byte against `fixtures/expected/*.json`. This exists to catch the hazard from
+  [Serving multiple versions](#serving-multiple-versions): once a generation is rated, editing a
+  shared helper it depends on (e.g. `src/agent/legality.ts`) can silently change what an
+  already-shipped `/vN` plays, without touching that generation's own code. If a drift is
+  intentional — you've cut a new generation and the old one is meant to stay exactly as it was, or
+  you're updating an unreleased generation on purpose — regenerate the goldens with
+  `UPDATE_FIXTURES=1 npm test`.
 
 ## Repository layout
 
 ```
 .
 ├── src/
-│   ├── main.ts                # the template: serve + new HoldStrategy()
-│   └── agent/                 # MCP server, state cache, Strategy interface, legality + validators
+│   ├── main.ts                # the template: versionedRequestListener([{ path: "/v1", strategy: new HoldStrategy() }])
+│   └── agent/
+│       ├── strategy.ts        # Strategy interface, HoldStrategy (the stub default), holdOrders helper
+│       ├── cache.ts           # StateCache: match-ID-scoped get_state -> submit_orders bridge
+│       ├── legality.ts        # turn/speed-step helpers that keep every order legal
+│       ├── server.ts          # buildServer(strategy, cache, version): registers get_state/submit_orders/surrender
+│       ├── serve.ts           # Mount, versionedRequestListener, serveListener, serve: Streamable HTTP + graceful shutdown
+│       └── fixtures.ts        # loadScenarios/replay helpers for the fixture drift lock
 ├── examples/
 │   ├── random/                # random reference agent + cmd.ts
 │   └── heuristic/             # heuristic reference agent + cmd.ts
+├── fixtures/                  # scenario corpus + per-generation golden orders (fixture drift lock)
 └── test/                      # unit tests + conformance-over-HTTP test
 ```
 

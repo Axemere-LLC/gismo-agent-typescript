@@ -5,7 +5,7 @@
 import { parseArgs } from "node:util";
 
 import { NAME, VERSION } from "../../src/agent/server.js";
-import { serve } from "../../src/agent/serve.js";
+import { serveListener, versionedRequestListener, type Mount } from "../../src/agent/serve.js";
 import { HeuristicStrategy } from "./strategy.js";
 
 async function main(): Promise<void> {
@@ -14,7 +14,8 @@ async function main(): Promise<void> {
   } = parseArgs({ options: { addr: { type: "string", default: ":8082" } } });
 
   console.log(`${NAME} ${VERSION} heuristic example listening on ${addr}`);
-  await serve(addr as string, new HeuristicStrategy());
+  const mounts: Mount[] = [{ path: "/v1", strategy: new HeuristicStrategy() }];
+  await serveListener(addr as string, versionedRequestListener(mounts));
 }
 
 main().catch((err: unknown) => {
